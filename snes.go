@@ -1,11 +1,23 @@
 package opt
 
+import "math/rand"
+
 // SNES is a Separable Natural Evolution Strategies optimiser. It is a search
 // distribution based optimizer that uses a diagonal normal distribution for search.
 type SNES struct {
+	// Generation data
+	size   uint
+	count  uint
+	scores []float64
+	seeds  []int64
+
 	// Search distribution parameters
+	len   uint
 	loc   []float64
 	scale []float64
+
+	// Noise source
+	source *rand.Rand
 
 	// Channels for concurrent access
 	searchChan chan searchReq
@@ -13,13 +25,31 @@ type SNES struct {
 	doneChan   chan bool
 }
 
+const initScale = 1e3
+
 // NewSNES creates a SNES optimiser and starts its run goroutine.
-func NewSNES() (s *SNES) {
-	// Creates search, show, and done channels
-	// constructs s
-	// fires off go s.run()
-	// returns s
-	return
+func NewSNES(len, size uint, seed int64) (s *SNES) {
+	scale := make([]float64, len)
+	for i := range scale {
+		scale[i] = initScale
+	}
+
+	s = &SNES{
+		size:   size,
+		count:  0,
+		scores: make([]float64, size),
+
+		len:    len,
+		loc:    make([]float64, len),
+		scale:  scale,
+		source: rand.New(rand.NewSource(seed)),
+
+		searchChan: make(chan searchReq),
+		showChan:   make(chan showReq),
+		doneChan:   make(chan bool),
+	}
+	go s.run()
+	return s
 }
 
 // Search returns a point and the seed used to draw it from the search distribution.
@@ -43,13 +73,13 @@ func (s *SNES) Show(score float64, seed int64) {
 
 // doSearch conducts Search assuming exclusive data structure access.
 func (s *SNES) doSearch() (point []float64, seed int64) {
-	// generate seed from rand
-	// use seed to draw randNorm
-	// scale and return point and seed
-	// increment generation counter
-	return
+	seed = s.source.Int63()
+	point = s.makePoint(seed)
+	s.count++
+	return point, seed
 }
 
+// doShow conducts Show assuming exclusive data structure access.
 func (s *SNES) doShow(score float64, seed int64) {
 	// Add the results to the gen
 	// If the generation is complete
@@ -62,11 +92,21 @@ func (s *SNES) doShow(score float64, seed int64) {
 	return
 }
 
+// makePoint generates a draw from the search distribution given a seed.
+func (s *SNES) makePoint(seed int64) (point []float64) {
+	point = make([]float64, s.len)
+	src := rand.New(rand.NewSource(seed))
+	for i := range point {
+		point[i] = s.loc[i] + s.scale[i]*src.NormFloat64()
+	}
+	return point
+}
+
 // run is the inner loop of the optimiser, and provides safe access to search data.
 // If a full generation of searches has been allocated
 func (s *SNES) run() {
 	for {
-		if true {
+		if s.count >= s.size {
 			// If the generation still needs to be allocated
 			select {
 			case req := <-s.searchChan:
