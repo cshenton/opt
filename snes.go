@@ -46,6 +46,7 @@ func (s *SNES) doSearch() (point []float64, seed int64) {
 	// generate seed from rand
 	// use seed to draw randNorm
 	// scale and return point and seed
+	// increment generation counter
 	return
 }
 
@@ -57,40 +58,37 @@ func (s *SNES) doShow(score float64, seed int64) {
 	// compute update
 	// if adaptive compute alternative update and test, update LR is necessary
 	// apply update
+	// reset generation counter
 	return
 }
-
-// !!!! STILL NEED TO BLOCK BETWEEN GENERATION SEND AND PROCESS
-// should be handled in run
-// Can we check each loop and say, "if the generation is allocated, listen on show and done"
-// "if the generation is yet to be allocated", listen on search, show and done
-// each pass atomatically updates the switch condition, so it's reliable
-
-// !!!! WHAT IF A WORKER THREAD DIES????
-// I mean, like a goroutine dies? More likely bad code.
-// No different to simple case, error handling is up to the user, if the generation isn't reported
-// on the optimiser will deadlock.
-// The only real way to fix this is either timeouts or a pulse, which I don't want to impose, the user
-// may choose to implement them. In such a case, I should possible provide an API for forcing search?
-// This really ties in to ownership and expiry of seeds.
-// We could preallocate blocks of seeds per generation, and only accept those.
-// Then we could provide an API to renew a seed, though TBH I would just prefer the user to return a default fitness.
 
 // run is the inner loop of the optimiser, and provides safe access to search data.
 // If a full generation of searches has been allocated
 func (s *SNES) run() {
 	for {
-		select {
-		case req := <-s.searchChan:
-			point, seed := s.doSearch()
-			req.respChan <- searchResp{
-				point: point,
-				seed:  seed,
+		if true {
+			// If the generation still needs to be allocated
+			select {
+			case req := <-s.searchChan:
+				point, seed := s.doSearch()
+				req.respChan <- searchResp{
+					point: point,
+					seed:  seed,
+				}
+			case req := <-s.showChan:
+				s.doShow(req.score, req.seed)
+			case <-s.doneChan:
+				break
 			}
-		case req := <-s.showChan:
-			s.doShow(req.score, req.seed)
-		case <-s.doneChan:
-			break
+		} else {
+			// If we're just waiting on results
+			select {
+			case req := <-s.showChan:
+				s.doShow(req.score, req.seed)
+			case <-s.doneChan:
+				break
+			}
 		}
+
 	}
 }
