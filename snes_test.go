@@ -62,6 +62,11 @@ func TestSNESSearchBlock(t *testing.T) {
 		_, _ = s.Search()
 	}
 
+	type searchResp struct {
+		point []float64
+		seed  int64
+	}
+
 	result := make(chan searchResp, 1)
 	timeout := make(chan bool, 1)
 
