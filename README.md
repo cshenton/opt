@@ -1,7 +1,7 @@
 # Opt: Scalable Optimisation for Humans
 [![Build Status](https://img.shields.io/travis/cshenton/opt.svg)](https://travis-ci.org/cshenton/opt)
 [![Coverage](https://img.shields.io/coveralls/github/cshenton/opt.svg)](https://coveralls.io/github/cshenton/opt)
-[![Build Status](https://travis-ci.org/cshenton/seer.svg?branch=master)](https://travis-ci.org/cshenton/seer)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cshenton/opt)](https://goreportcard.com/report/github.com/cshenton/opt)
 
 
 `opt` is an optimisation library designed to make writing scalable optimisation
