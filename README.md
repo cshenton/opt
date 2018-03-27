@@ -15,12 +15,25 @@ Thread-safe blackbox optimsers for Go.
 - batch utility computation
 - online utility computation
 - adaptive sampling
+    - When you update search params
+    - Do Hypothetical update with increased search rate
+    - Compute likelihood ratios for current generation
+    - weighted-MW test between actual, hypothetical ranking
+    - adjust learning rate.
+
+So I'm thinking we first do a functional implementation of the updates. Then in
+each main class, we just have a 'adaptive' param which activates a branch on update.
+
+What about continuous learning? We can just use the active generation, but we'll have
+to decide also how frequently to test for adjustments. Since we'll be using a smaller
+LR in general, we could adjust every step?
 
 
 ## Algorithms
 
 - SNES
 - SNES-as
+- Hyperprojection SNES
 - Block-free SNES (continuous generation)
 - XNES
 - XNES-as
