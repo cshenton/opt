@@ -42,6 +42,7 @@ func TestSNESSearch(t *testing.T) {
 	s := NewSNES(3, 10, 42, 0.1, false)
 
 	point, seed := s.Search()
+
 	if seed == 0 {
 		t.Error("seed not set")
 	}
@@ -49,6 +50,9 @@ func TestSNESSearch(t *testing.T) {
 		if point[i] == 0 {
 			t.Errorf("point not set at position %v", i)
 		}
+	}
+	if s.searchCount != 1 {
+		t.Error("search count not incremented")
 	}
 }
 
@@ -81,49 +85,9 @@ func TestSNESSearchBlock(t *testing.T) {
 }
 
 func TestSNESShow(t *testing.T) {
-	s := NewSNES(3, 10, 42, 0.1, false)
-	s.Show(20, 42)
-	// Just a simple check that something happened, internals tested in doShow.
-	if s.showCount == 0 {
-		t.Error("showCount not incremented")
-	}
-}
-
-func TestSNESShowBlock(t *testing.T) {
-	s := NewSNES(3, 10, 42, 0.1, false)
-	for i := 0; i < 10; i++ {
-		_, _ = s.Search()
-	}
-	s.Show(20, 42)
-	s.Show(13, 89)
-	// Just a simple check that something happened, internals tested in doShow.
-	if s.showCount == 0 {
-		t.Error("showCount not incremented")
-	}
-}
-
-func TestSNESdoSearch(t *testing.T) {
-	s := NewSNES(3, 10, 42, 0.1, false)
-
-	point, seed := s.doSearch()
-
-	if seed == 0 {
-		t.Error("seed not set")
-	}
-	for i := range point {
-		if point[i] == 0 {
-			t.Errorf("point not set at position %v", i)
-		}
-	}
-	if s.searchCount != 1 {
-		t.Error("search count not incremented")
-	}
-}
-
-func TestSNESdoShow(t *testing.T) {
 	s := NewSNES(3, 2, 42, 0.1, false)
 
-	s.doShow(20, 42)
+	s.Show(20, 42)
 	if s.showCount != 1 {
 		t.Error("showCount did not increment")
 	}
@@ -134,7 +98,7 @@ func TestSNESdoShow(t *testing.T) {
 		t.Errorf("expected score %v at position %v, but got %v", 20, 0, s.scores[0])
 	}
 
-	s.doShow(13.5, 89)
+	s.Show(13.5, 89)
 	if s.searchCount != 0 {
 		t.Error("searchCount did not reset")
 	}
