@@ -6,15 +6,20 @@ import "math/rand"
 // distribution based optimizer that uses a diagonal normal distribution for search.
 type SNES struct {
 	// Generation data
-	size   uint
-	count  uint
-	scores []float64
-	seeds  []int64
+	size        uint
+	searchCount uint
+	showCount   uint
+	scores      []float64
+	seeds       []int64
 
 	// Search distribution parameters
 	len   uint
 	loc   []float64
 	scale []float64
+
+	// Search hyperparameters
+	// ...
+	adaptive bool
 
 	// Noise source
 	source *rand.Rand
@@ -28,16 +33,18 @@ type SNES struct {
 const initScale = 1e3
 
 // NewSNES creates a SNES optimiser and starts its run goroutine.
-func NewSNES(len, size uint, seed int64) (s *SNES) {
+func NewSNES(len, size uint, seed int64, adaptive bool) (s *SNES) {
 	scale := make([]float64, len)
 	for i := range scale {
 		scale[i] = initScale
 	}
 
 	s = &SNES{
-		size:   size,
-		count:  0,
-		scores: make([]float64, size),
+		size:        size,
+		showCount:   0,
+		searchCount: 0,
+		scores:      make([]float64, size),
+		seeds:       make([]int64, size),
 
 		len:    len,
 		loc:    make([]float64, len),
@@ -68,28 +75,33 @@ func (s *SNES) Show(score float64, seed int64) {
 		score: score,
 		seed:  seed,
 	}
-	return
 }
 
 // doSearch conducts Search assuming exclusive data structure access.
 func (s *SNES) doSearch() (point []float64, seed int64) {
 	seed = s.source.Int63()
 	point = s.makePoint(seed)
-	s.count++
+	s.searchCount++
 	return point, seed
 }
 
 // doShow conducts Show assuming exclusive data structure access.
 func (s *SNES) doShow(score float64, seed int64) {
-	// Add the results to the gen
-	// If the generation is complete
-	// compute score
-	// compute grads
-	// compute update
-	// if adaptive compute alternative update and test, update LR is necessary
-	// apply update
-	// reset generation counter
-	return
+	s.scores[s.showCount] = score
+	s.seeds[s.showCount] = seed
+	s.showCount++
+
+	if s.showCount >= s.size {
+		_ = utilities(s.scores)
+		// compute grads
+		// compute update
+		// apply update
+		if s.adaptive {
+			// compute alternative update and test, update LR is necessary
+		}
+		s.showCount = 0
+		s.searchCount = 0
+	}
 }
 
 // makePoint generates a draw from the search distribution given a seed.
@@ -103,10 +115,11 @@ func (s *SNES) makePoint(seed int64) (point []float64) {
 }
 
 // run is the inner loop of the optimiser, and provides safe access to search data.
-// If a full generation of searches has been allocated
+// If a full generation of searches has been allocated it will stop consuming from
+// the search channel until that generation has been processed.
 func (s *SNES) run() {
 	for {
-		if s.count >= s.size {
+		if s.searchCount <= s.size {
 			// If the generation still needs to be allocated
 			select {
 			case req := <-s.searchChan:
