@@ -5,8 +5,8 @@ import (
 	"math/rand"
 )
 
-// SNES is a Separable Natural Evolution Strategies optimiser. It is a search
-// distribution based optimizer that uses a diagonal normal distribution for search.
+// SNES is a Separable Natural Evolution Strategies optimiser. It is a search distribution based
+// optimizer that uses a diagonal normal distribution for search.
 type SNES struct {
 	// Generation data
 	size        uint
@@ -35,7 +35,7 @@ type SNES struct {
 
 const initScale = 1e3
 
-// NewSNES creates a SNES optimiser and starts its run goroutine.
+// NewSNES creates a SNES optimiser with the provided parameters and starts its run goroutine.
 func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) {
 	scale := make([]float64, len)
 	for i := range scale {
@@ -53,8 +53,9 @@ func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) 
 		loc:   make([]float64, len),
 		scale: scale,
 
-		rate:   rate,
-		source: rand.New(rand.NewSource(seed)),
+		rate:     rate,
+		adaptive: adaptive,
+		source:   rand.New(rand.NewSource(seed)),
 
 		searchChan: make(chan searchReq),
 		showChan:   make(chan showReq),
@@ -82,7 +83,8 @@ func (s *SNES) Show(score float64, seed int64) {
 	}
 }
 
-// doSearch conducts Search assuming exclusive data structure access.
+// doSearch returns a seed and a search point from that seed. It also increments the generation
+// search counter.
 func (s *SNES) doSearch() (point []float64, seed int64) {
 	seed = s.source.Int63()
 	point = make([]float64, s.len)
@@ -94,7 +96,9 @@ func (s *SNES) doSearch() (point []float64, seed int64) {
 	return point, seed
 }
 
-// doShow conducts Show assuming exclusive data structure access.
+// doShow adds the provided score and seed to the generation. If the generation  is complete, it
+// then computes utilities, gradients, and updates the search distribution parameters and resets
+// the generation.
 func (s *SNES) doShow(score float64, seed int64) {
 	s.scores[s.showCount] = score
 	s.seeds[s.showCount] = seed
@@ -127,7 +131,7 @@ func (s *SNES) doShow(score float64, seed int64) {
 	}
 }
 
-// makeNoise makes an unscaled noise vector from a random seed.
+// makeNoise deterministically makes an vector of standard normal noise from the provided seed.
 func (s *SNES) makeNoise(seed int64) (noise []float64) {
 	noise = make([]float64, s.len)
 	src := rand.New(rand.NewSource(seed))
