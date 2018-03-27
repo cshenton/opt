@@ -1,6 +1,9 @@
 package opt
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+)
 
 // SNES is a Separable Natural Evolution Strategies optimiser. It is a search
 // distribution based optimizer that uses a diagonal normal distribution for search.
@@ -18,7 +21,7 @@ type SNES struct {
 	scale []float64
 
 	// Search hyperparameters
-	// ...
+	rate     float64
 	adaptive bool
 
 	// Noise source
@@ -33,7 +36,7 @@ type SNES struct {
 const initScale = 1e3
 
 // NewSNES creates a SNES optimiser and starts its run goroutine.
-func NewSNES(len, size uint, seed int64, adaptive bool) (s *SNES) {
+func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) {
 	scale := make([]float64, len)
 	for i := range scale {
 		scale[i] = initScale
@@ -46,9 +49,11 @@ func NewSNES(len, size uint, seed int64, adaptive bool) (s *SNES) {
 		scores:      make([]float64, size),
 		seeds:       make([]int64, size),
 
-		len:    len,
-		loc:    make([]float64, len),
-		scale:  scale,
+		len:   len,
+		loc:   make([]float64, len),
+		scale: scale,
+
+		rate:   rate,
 		source: rand.New(rand.NewSource(seed)),
 
 		searchChan: make(chan searchReq),
@@ -80,7 +85,11 @@ func (s *SNES) Show(score float64, seed int64) {
 // doSearch conducts Search assuming exclusive data structure access.
 func (s *SNES) doSearch() (point []float64, seed int64) {
 	seed = s.source.Int63()
-	point = s.makePoint(seed)
+	point = make([]float64, s.len)
+	noise := s.makeNoise(seed)
+	for i := range point {
+		point[i] = s.loc[i] + s.scale[i]*noise[i]
+	}
 	s.searchCount++
 	return point, seed
 }
@@ -92,26 +101,40 @@ func (s *SNES) doShow(score float64, seed int64) {
 	s.showCount++
 
 	if s.showCount >= s.size {
-		_ = utilities(s.scores)
-		// compute grads
-		// compute update
-		// apply update
+		u := utilities(s.scores)
+		gradLoc := make([]float64, s.len)
+		gradScale := make([]float64, s.len)
+		noise := make([]float64, s.len)
+		for i := range u {
+			noise = s.makeNoise(s.seeds[i])
+			for j := range noise {
+				gradLoc[j] += u[i] * noise[j]
+				gradScale[j] += u[i] * (math.Pow(noise[j], 2) - 1)
+			}
+		}
+
 		if s.adaptive {
 			// compute alternative update and test, update LR is necessary
 		}
+
+		for i := range s.loc {
+			s.loc[i] += s.rate * s.scale[i] * gradLoc[i]
+			s.scale[i] *= math.Exp(0.5 * s.rate * gradScale[i])
+		}
+
 		s.showCount = 0
 		s.searchCount = 0
 	}
 }
 
-// makePoint generates a draw from the search distribution given a seed.
-func (s *SNES) makePoint(seed int64) (point []float64) {
-	point = make([]float64, s.len)
+// makeNoise makes an unscaled noise vector from a random seed.
+func (s *SNES) makeNoise(seed int64) (noise []float64) {
+	noise = make([]float64, s.len)
 	src := rand.New(rand.NewSource(seed))
-	for i := range point {
-		point[i] = s.loc[i] + s.scale[i]*src.NormFloat64()
+	for i := range noise {
+		noise[i] = src.NormFloat64()
 	}
-	return point
+	return noise
 }
 
 // run is the inner loop of the optimiser, and provides safe access to search data.
