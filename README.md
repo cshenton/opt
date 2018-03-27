@@ -29,7 +29,8 @@ func main() {
 
         for i := 0; i < n; i++ {
                 point, seed := o.Search()
-                score := bench.Rastrigin(point)
+                // Minimise the rastrigin function
+                score := -bench.Rastrigin(point)
                 o.Show(score, seed)
         }
 

@@ -3,6 +3,7 @@ package opt
 import (
 	"math"
 	"math/rand"
+	"sync"
 )
 
 // SNES is a Separable Natural Evolution Strategies optimiser. It is a search distribution based
@@ -27,10 +28,8 @@ type SNES struct {
 	// Noise source
 	source *rand.Rand
 
-	// Channels for concurrent access
-	searchChan chan searchReq
-	showChan   chan showReq
-	doneChan   chan bool
+	// Mutex
+	*sync.Mutex
 }
 
 const initScale = 1e3
@@ -57,30 +56,24 @@ func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) 
 		adaptive: adaptive,
 		source:   rand.New(rand.NewSource(seed)),
 
-		searchChan: make(chan searchReq),
-		showChan:   make(chan showReq),
-		doneChan:   make(chan bool),
+		Mutex: &sync.Mutex{},
 	}
-	go s.run()
 	return s
 }
 
 // Search returns a point and the seed used to draw it from the search distribution.
 func (s *SNES) Search() (point []float64, seed int64) {
-	rc := make(chan searchResp)
-	s.searchChan <- searchReq{
-		respChan: rc,
-	}
-	r := <-rc
-	return r.point, r.seed
+	s.Lock()
+	point, seed = s.doSearch()
+	s.Unlock()
+	return
 }
 
 // Show updates the search distribution given a score and the seed that achieved it.
 func (s *SNES) Show(score float64, seed int64) {
-	s.showChan <- showReq{
-		score: score,
-		seed:  seed,
-	}
+	s.Lock()
+	s.doShow(score, seed)
+	s.Unlock()
 }
 
 // doSearch returns a seed and a search point from that seed. It also increments the generation
@@ -137,36 +130,4 @@ func (s *SNES) makeNoise(seed int64) (noise []float64) {
 		noise[i] = src.NormFloat64()
 	}
 	return noise
-}
-
-// run is the inner loop of the optimiser, and provides safe access to search data.
-// If a full generation of searches has been allocated it will stop consuming from
-// the search channel until that generation has been processed.
-func (s *SNES) run() {
-	for {
-		if s.searchCount < s.size {
-			// If the generation still needs to be allocated
-			select {
-			case req := <-s.searchChan:
-				point, seed := s.doSearch()
-				req.respChan <- searchResp{
-					point: point,
-					seed:  seed,
-				}
-			case req := <-s.showChan:
-				s.doShow(req.score, req.seed)
-			case <-s.doneChan:
-				break
-			}
-		} else {
-			// If we're just waiting on results
-			select {
-			case req := <-s.showChan:
-				s.doShow(req.score, req.seed)
-			case <-s.doneChan:
-				break
-			}
-		}
-
-	}
 }
