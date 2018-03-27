@@ -1,5 +1,63 @@
-# Opt
-Thread-safe blackbox optimsers for Go.
+# Opt: Scalable Optimisation for Humans
+
+`opt` is an optimisation library designed to make writing scalable optimisation
+routines easy. It provides a unified API for optimising within a single thread,
+multiple threads, or across machines, meaning the choice of how to distribute work
+is up to you.
+
+Just `go get github.com/cshenton/opt` to install.
+
+
+## Basic Usage
+
+Opt uses evolution strategies optimisers under the hood, which enables a simple API.
+First, `Search()` against an optimiser to get a test point, then evaluate its score how
+you see fit, then `Show()` that score with the test seed to the optimiser. Keep going
+until you converge.
+
+```go
+package main
+
+import (
+        "github.com/cshenton/opt"
+        "github.com/cshenton/opt/bench"
+)
+
+func main() {
+        n := 1000
+        o := opt.NewSNES(...)
+
+        for i := 0; i < n; i++ {
+                point, seed := o.Search()
+                score := bench.Rastrigin(point)
+                o.Show(score, seed)
+        }
+
+        final, _ := o.Search()
+        fmt.Println(final)
+}
+```
+
+Want to use more workers on the same machine to speed up evaluations? Just do it,
+`opt` optimisers are thread safe, and will simply block calls to `Search` and `Show`
+when important computations are happening.
+
+See `examples` for some suggestions on how to use `opt`.
+
+
+## Choice of Optimizers
+
+Right now, `opt` deals with optimisers that work with real-valued inputs.
+
+#### Available
+- SNES (separable natural evolution strategies), great for high (>100) dimensional problems.
+
+#### Coming Soon
+- xNES (exponential natural evolution strategies), great for tricky low (<100) dimensional problems.
+- Adaptive learning rates for XNES, SNES, great for unfamiliar problems.
+- Hyperprojection SNES
+- Block-free SNES
+
 
 ## ToDo
 
@@ -7,61 +65,3 @@ Thread-safe blackbox optimsers for Go.
 - single and multi thread examples using benchmark functions
 - some introspection / stopping functions for SNES
 - Travis, coveralls
--
-
-## Layout
-
-- `.`: key interfaces, algorithms.
-- `bench`: functions and dataset to benchmark optimisers
-    - rastrigin etc. for low dim
-    - neural network controller for high dim
-- `examples`: examples of single-thread, multi-thread, and distributed use
-
-
-## Internal
-
-- batch utility computation
-- online utility computation
-- adaptive sampling
-    - When you update search params
-    - Do Hypothetical update with increased search rate
-    - Compute likelihood ratios for current generation
-    - weighted-MW test between actual, hypothetical ranking
-    - adjust learning rate.
-
-So I'm thinking we first do a functional implementation of the updates. Then in
-each main class, we just have a 'adaptive' param which activates a branch on update.
-
-What about continuous learning? We can just use the active generation, but we'll have
-to decide also how frequently to test for adjustments. Since we'll be using a smaller
-LR in general, we could adjust every step?
-
-
-## Algorithms
-
-- SNES
-- SNES-as
-- Hyperprojection SNES
-- Block-free SNES (continuous generation)
-- XNES
-- XNES-as
-
-
-## Internal, Float64
-
-We want to share adaptive sampling in a nice way. Also since XNES, SNES are just
-distribution choices, we should be able to, so there's a few components:
-
-- Distribution choice
-- Adaptive sampling, yes/no
-- Generation management (storing generation results, blocking on Search)
-
-## Internal, Byte
-
-For another day.
-
-## Notes
-
-- split benchmarks up for different problem spaces
-- have a table here recommending algorithms for each problem
-- proper godoc
