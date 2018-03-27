@@ -17,20 +17,3 @@ type Float64Searcher interface {
 	// Informs the searcher of the score a particular seeded draw achieved
 	Show(score float64, seed int64)
 }
-
-// searchReq is the request sent in a Search call.
-type searchReq struct {
-	respChan chan<- searchResp
-}
-
-// searchReq is the response received in a Search call.
-type searchResp struct {
-	point []float64
-	seed  int64
-}
-
-// showReq is the request sent is a Show call.
-type showReq struct {
-	score float64
-	seed  int64
-}
