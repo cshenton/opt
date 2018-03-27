@@ -66,3 +66,9 @@ Right now, `opt` deals with optimisers that work with real-valued inputs.
 - single and multi thread examples using benchmark functions
 - some introspection / stopping functions for SNES
 - Travis, coveralls
+
+## Dependencies
+
+- `golang.org/x/exp/rand` Rob Pike's experimental rand library.
+    - <1ns to create a random source vs. 8.5µs in std lib.
+    - This probably matters more for smaller optimisation problems.

@@ -2,8 +2,9 @@ package opt
 
 import (
 	"math"
-	"math/rand"
 	"sync"
+
+	"golang.org/x/exp/rand"
 )
 
 // SNES is a Separable Natural Evolution Strategies optimiser. It is a search distribution based
@@ -54,7 +55,7 @@ func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) 
 
 		rate:     rate,
 		adaptive: adaptive,
-		source:   rand.New(rand.NewSource(seed)),
+		source:   rand.New(rand.NewSource(uint64(seed))),
 
 		Mutex: &sync.Mutex{},
 	}
@@ -64,21 +65,6 @@ func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) 
 // Search returns a point and the seed used to draw it from the search distribution.
 func (s *SNES) Search() (point []float64, seed int64) {
 	s.Lock()
-	point, seed = s.doSearch()
-	s.Unlock()
-	return
-}
-
-// Show updates the search distribution given a score and the seed that achieved it.
-func (s *SNES) Show(score float64, seed int64) {
-	s.Lock()
-	s.doShow(score, seed)
-	s.Unlock()
-}
-
-// doSearch returns a seed and a search point from that seed. It also increments the generation
-// search counter.
-func (s *SNES) doSearch() (point []float64, seed int64) {
 	seed = s.source.Int63()
 	point = make([]float64, s.len)
 	noise := s.makeNoise(seed)
@@ -86,13 +72,13 @@ func (s *SNES) doSearch() (point []float64, seed int64) {
 		point[i] = s.loc[i] + s.scale[i]*noise[i]
 	}
 	s.searchCount++
+	s.Unlock()
 	return point, seed
 }
 
-// doShow adds the provided score and seed to the generation. If the generation  is complete, it
-// then computes utilities, gradients, and updates the search distribution parameters and resets
-// the generation.
-func (s *SNES) doShow(score float64, seed int64) {
+// Show updates the search distribution given a score and the seed that achieved it.
+func (s *SNES) Show(score float64, seed int64) {
+	s.Lock()
 	s.scores[s.showCount] = score
 	s.seeds[s.showCount] = seed
 	s.showCount++
@@ -120,12 +106,21 @@ func (s *SNES) doShow(score float64, seed int64) {
 		s.showCount = 0
 		s.searchCount = 0
 	}
+	s.Unlock()
+}
+
+// Precision ... write me tomorrow
+func (s *SNES) Precision() (p float64) {
+	for i := range s.scale {
+		p += s.scale[i]
+	}
+	return p
 }
 
 // makeNoise deterministically makes an vector of standard normal noise from the provided seed.
 func (s *SNES) makeNoise(seed int64) (noise []float64) {
 	noise = make([]float64, s.len)
-	src := rand.New(rand.NewSource(seed))
+	src := rand.New(rand.NewSource(uint64(seed)))
 	for i := range noise {
 		noise[i] = src.NormFloat64()
 	}
