@@ -62,8 +62,8 @@ Right now, `opt` deals with optimisers that work with real-valued inputs.
 
 ## ToDo
 
-- low dim benchmark functions, runner.
-- single and multi thread examples using benchmark functions
+- More expensive benchmark function to demonstrate multithread perf.
+- benchmark runner.
 - some introspection / stopping functions for SNES
 - Travis, coveralls
 

@@ -9,16 +9,15 @@ import (
 )
 
 func main() {
-	o := opt.NewSNES(100, 10, 42, 0.1, false)
-
+	o := opt.NewSNES(10, 10, 42, 0.01, false)
 	t := time.Now()
-
 	p := 1.0
 	n := 0
 
-	for p > 1e-10 {
+	for p > 1e-8 {
 		point, seed := o.Search()
-		score := -bench.Sphere(point)
+		score := -bench.Rastrigin(point)
+		// time.Sleep(10 * time.Microsecond)
 		o.Show(score, seed)
 
 		p = o.Precision()

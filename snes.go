@@ -3,6 +3,7 @@ package opt
 import (
 	"math"
 	"sync"
+	"time"
 
 	"golang.org/x/exp/rand"
 )
@@ -64,6 +65,11 @@ func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) 
 
 // Search returns a point and the seed used to draw it from the search distribution.
 func (s *SNES) Search() (point []float64, seed int64) {
+	// Awful, but what's the canonical way to block in this setting?
+	if s.searchCount >= s.size {
+		time.Sleep(10 * time.Nanosecond)
+	}
+
 	s.Lock()
 	seed = s.source.Int63()
 	point = make([]float64, s.len)
