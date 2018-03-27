@@ -1,6 +1,9 @@
 package opt
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestNewSNES(t *testing.T) {
 	tt := []struct {
@@ -35,13 +38,71 @@ func TestNewSNES(t *testing.T) {
 	}
 }
 
-func TestSNESSearch(t *testing.T) {}
+func TestSNESSearch(t *testing.T) {
+	s := NewSNES(3, 10, 42, 0.1, false)
 
-func TestSNESShow(t *testing.T) {}
+	point, seed := s.Search()
+	if seed == 0 {
+		t.Error("seed not set")
+	}
+	for i := range point {
+		if point[i] == 0 {
+			t.Errorf("point not set at position %v", i)
+		}
+	}
+}
 
-func TestSNESdoSearch(t *testing.T) {}
+func TestSNESSearchBlock(t *testing.T) {
+	s := NewSNES(3, 10, 42, 0.1, false)
+	for i := 0; i < 10; i++ {
+		_, _ = s.Search()
+	}
 
-func TestSNESdoShow(t *testing.T) {
+	result := make(chan searchResp, 1)
+	timeout := make(chan bool, 1)
+
+	go func() {
+		point, seed := s.Search()
+		result <- searchResp{
+			point: point,
+			seed:  seed,
+		}
+	}()
+	go func() {
+		time.Sleep(1 * time.Second)
+		timeout <- true
+	}()
+
+	select {
+	case r := <-result:
+		t.Errorf("s.Search() should have blocked indefinitely, but got %v, %v", r.point, r.seed)
+	case <-timeout:
+	}
+}
+
+func TestSNESShow(t *testing.T) {
+	s := NewSNES(3, 10, 42, 0.1, false)
+	s.Show(20, 42)
+	// Just a simple check that something happened, internals tested in doShow.
+	if s.showCount == 0 {
+		t.Error("showCount not incremented")
+	}
+}
+
+func TestSNESShowBlock(t *testing.T) {
+	s := NewSNES(3, 10, 42, 0.1, false)
+	for i := 0; i < 10; i++ {
+		_, _ = s.Search()
+	}
+	s.Show(20, 42)
+	s.Show(13, 89)
+	// Just a simple check that something happened, internals tested in doShow.
+	if s.showCount == 0 {
+		t.Error("showCount not incremented")
+	}
+}
+
+func TestSNESdoSearch(t *testing.T) {
 	s := NewSNES(3, 10, 42, 0.1, false)
 
 	point, seed := s.doSearch()
@@ -56,6 +117,34 @@ func TestSNESdoShow(t *testing.T) {
 	}
 	if s.searchCount != 1 {
 		t.Error("search count not incremented")
+	}
+}
+
+func TestSNESdoShow(t *testing.T) {
+	s := NewSNES(3, 2, 42, 0.1, false)
+
+	s.doShow(20, 42)
+	if s.showCount != 1 {
+		t.Error("showCount did not increment")
+	}
+	if s.seeds[0] != 42 {
+		t.Errorf("expected seed %v at position %v, but got %v", 42, 0, s.seeds[0])
+	}
+	if s.scores[0] != 20 {
+		t.Errorf("expected score %v at position %v, but got %v", 20, 0, s.scores[0])
+	}
+
+	s.doShow(13.5, 89)
+	if s.searchCount != 0 {
+		t.Error("searchCount did not reset")
+	}
+	if s.showCount != 0 {
+		t.Error("showCount did not reset")
+	}
+	for i := range s.loc {
+		if s.loc[i] == 0 {
+			t.Errorf("loc did not update at position %v", i)
+		}
 	}
 }
 

@@ -117,9 +117,7 @@ func (s *SNES) doShow(score float64, seed int64) {
 			}
 		}
 
-		if s.adaptive {
-			// compute alternative update and test, update LR is necessary
-		}
+		// if s.adaptive { do thing }
 
 		for i := range s.loc {
 			s.loc[i] += s.rate * s.scale[i] * gradLoc[i]
@@ -146,7 +144,7 @@ func (s *SNES) makeNoise(seed int64) (noise []float64) {
 // the search channel until that generation has been processed.
 func (s *SNES) run() {
 	for {
-		if s.searchCount <= s.size {
+		if s.searchCount < s.size {
 			// If the generation still needs to be allocated
 			select {
 			case req := <-s.searchChan:
