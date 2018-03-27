@@ -1,6 +1,14 @@
 # Opt
 Thread-safe blackbox optimsers for Go.
 
+## ToDo
+
+- low dim benchmark functions, runner.
+- single and multi thread examples using benchmark functions
+- some introspection / stopping functions for SNES
+- Travis, coveralls
+-
+
 ## Layout
 
 - `.`: key interfaces, algorithms.

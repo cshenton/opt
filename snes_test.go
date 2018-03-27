@@ -69,7 +69,7 @@ func TestSNESSearchBlock(t *testing.T) {
 		}
 	}()
 	go func() {
-		time.Sleep(1 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 		timeout <- true
 	}()
 
