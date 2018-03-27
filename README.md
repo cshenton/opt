@@ -62,7 +62,11 @@ Right now, `opt` deals with optimisers that work with real-valued inputs.
 
 ## ToDo
 
+- Simpler options handling
+- xNES
 - More expensive benchmark function to demonstrate multithread perf.
+- worker queue example
+- rpc example
 - benchmark runner.
 - some introspection / stopping functions for SNES
 - Travis, coveralls
