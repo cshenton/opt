@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	o := opt.NewSNES(10, 10, 42, 0.01, false)
+	o := opt.NewSNES(10, opt.DefaultOptions)
 	t := time.Now()
 	p := 1.0
 	n := 0
