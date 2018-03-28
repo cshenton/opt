@@ -36,29 +36,29 @@ type XNES struct {
 
 // NewXNES creates an XNES optimiser over the d-dimensional real numbers, using the provided
 // options for the optimiser.
-// func NewXNES(d uint, o *Options) (s *SNES) {
-// 	scale := make([]float64, d)
-// 	for i := range scale {
-// 		scale[i] = initScale
-// 	}
+func NewXNES(d uint, o *Options) (s *SNES) {
+	scale := make([]float64, d)
+	for i := range scale {
+		scale[i] = initScale
+	}
 
-// 	s = &SNES{
-// 		size:        o.GenerationSize,
-// 		showCount:   0,
-// 		searchCount: 0,
-// 		scores:      make([]float64, o.GenerationSize),
-// 		seeds:       make([]int64, o.GenerationSize),
+	s = &SNES{
+		size:        o.GenerationSize,
+		showCount:   0,
+		searchCount: 0,
+		scores:      make([]float64, o.GenerationSize),
+		seeds:       make([]int64, o.GenerationSize),
 
-// 		len:   d,
-// 		loc:   make([]float64, d),
-// 		scale: scale,
-// 		//shape:  IDENTITY MATRIX
+		len:   d,
+		loc:   make([]float64, d),
+		scale: scale,
+		//shape:  IDENTITY MATRIX
 
-// 		rate:     o.LearningRate,
-// 		adaptive: o.Adaptive,
-// 		source:   rand.New(rand.NewSource(uint64(o.RandomSeed))),
+		rate:     o.LearningRate,
+		adaptive: o.Adaptive,
+		source:   rand.New(rand.NewSource(uint64(o.RandomSeed))),
 
-// 		Mutex: &sync.Mutex{},
-// 	}
-// 	return s
-// }
+		Mutex: &sync.Mutex{},
+	}
+	return s
+}
