@@ -8,9 +8,9 @@ import (
 func TestNewSNES(t *testing.T) {
 	tt := []struct {
 		name     string
-		len      uint
+		dim      uint
 		size     uint
-		seed     int64
+		seed     uint64
 		rate     float64
 		adaptive bool
 	}{
@@ -20,10 +20,16 @@ func TestNewSNES(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSNES(tc.len, tc.size, tc.seed, tc.rate, tc.adaptive)
+			o := &Options{
+				Adaptive:       tc.adaptive,
+				GenerationSize: tc.size,
+				LearningRate:   tc.rate,
+				RandomSeed:     tc.seed,
+			}
+			s := NewSNES(tc.dim, o)
 
-			if s.len != tc.len {
-				t.Errorf("expected len %v, but got %v", tc.len, s.len)
+			if s.len != tc.dim {
+				t.Errorf("expected len %v, but got %v", tc.dim, s.len)
 			}
 			if s.size != tc.size {
 				t.Errorf("expected size %v, but got %v", tc.size, s.size)
@@ -39,7 +45,7 @@ func TestNewSNES(t *testing.T) {
 }
 
 func TestSNESSearch(t *testing.T) {
-	s := NewSNES(3, 10, 42, 0.1, false)
+	s := NewSNES(3, DefaultOptions)
 
 	point, seed := s.Search()
 
@@ -57,9 +63,14 @@ func TestSNESSearch(t *testing.T) {
 }
 
 func TestSNESSearchBlock(t *testing.T) {
-	s := NewSNES(3, 10, 42, 0.1, false)
+	s := NewSNES(3, DefaultOptions)
 	for i := 0; i < 10; i++ {
 		_, _ = s.Search()
+	}
+
+	type searchResp struct {
+		point []float64
+		seed  int64
 	}
 
 	result := make(chan searchResp, 1)
@@ -85,7 +96,9 @@ func TestSNESSearchBlock(t *testing.T) {
 }
 
 func TestSNESShow(t *testing.T) {
-	s := NewSNES(3, 2, 42, 0.1, false)
+	o := DefaultOptions
+	o.GenerationSize = 2
+	s := NewSNES(3, o)
 
 	s.Show(20, 42)
 	if s.showCount != 1 {
@@ -114,7 +127,7 @@ func TestSNESShow(t *testing.T) {
 
 func TestSNESmakeNoise(t *testing.T) {
 	var seed int64 = 404
-	s := NewSNES(10, 10, 42, 0.1, false)
+	s := NewSNES(10, DefaultOptions)
 
 	n1 := s.makeNoise(seed)
 	n2 := s.makeNoise(seed)

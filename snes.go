@@ -36,27 +36,28 @@ type SNES struct {
 
 const initScale = 1e3
 
-// NewSNES creates a SNES optimiser with the provided parameters and starts its run goroutine.
-func NewSNES(len, size uint, seed int64, rate float64, adaptive bool) (s *SNES) {
-	scale := make([]float64, len)
+// NewSNES creates a SNES optimiser over the d-dimensional real numbers, using the provided
+// options for the optimiser.
+func NewSNES(d uint, o *Options) (s *SNES) {
+	scale := make([]float64, d)
 	for i := range scale {
 		scale[i] = initScale
 	}
 
 	s = &SNES{
-		size:        size,
+		size:        o.GenerationSize,
 		showCount:   0,
 		searchCount: 0,
-		scores:      make([]float64, size),
-		seeds:       make([]int64, size),
+		scores:      make([]float64, o.GenerationSize),
+		seeds:       make([]int64, o.GenerationSize),
 
-		len:   len,
-		loc:   make([]float64, len),
+		len:   d,
+		loc:   make([]float64, d),
 		scale: scale,
 
-		rate:     rate,
-		adaptive: adaptive,
-		source:   rand.New(rand.NewSource(uint64(seed))),
+		rate:     o.LearningRate,
+		adaptive: o.Adaptive,
+		source:   rand.New(rand.NewSource(uint64(o.RandomSeed))),
 
 		Mutex: &sync.Mutex{},
 	}

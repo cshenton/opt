@@ -14,33 +14,39 @@ Just `go get github.com/cshenton/opt` to install.
 
 ## Basic Usage
 
-Opt uses evolution strategies optimisers under the hood, which enables a simple API.
-First, `Search()` against an optimiser to get a test point, then evaluate its score how
-you see fit, then `Show()` that score with the test seed to the optimiser. Keep going
-until you converge.
+Opt uses [natural evolution strategies](http://www.jmlr.org/papers/volume15/wierstra14a/wierstra14a.pdf)
+optimisers under the hood, which enables a simple API. First, `Search()` against an optimiser
+to get a test point, then evaluate its score how you see fit, then `Show()` that score with
+the test seed to the optimiser. Keep going until you converge.
 
 ```go
 package main
 
 import (
-        "github.com/cshenton/opt"
-        "github.com/cshenton/opt/bench"
+	"fmt"
+
+	"github.com/cshenton/opt"
+	"github.com/cshenton/opt/bench"
 )
 
 func main() {
-        n := 1000
-        o := opt.NewSNES(...)
+	n := 10000
 
-        for i := 0; i < n; i++ {
-                point, seed := o.Search()
-                // Minimise the rastrigin function
-                score := -bench.Rastrigin(point)
-                o.Show(score, seed)
-        }
+	op := opt.DefaultOptions
+	op.LearningRate = 0.5
+	o := opt.NewSNES(10, op)
 
-        final, _ := o.Search()
-        fmt.Println(final)
+	for i := 0; i < n; i++ {
+		point, seed := o.Search()
+		// Minimise the 10-dimensional sphere function
+		score := -bench.Sphere(point)
+		o.Show(score, seed)
+	}
+
+	final, _ := o.Search()
+	fmt.Println(final)
 }
+
 ```
 
 Want to use more workers on the same machine to speed up evaluations? Just do it,

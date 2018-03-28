@@ -4,6 +4,6 @@ package opt
 import "testing"
 
 func TestFloat64SearcherSNES(t *testing.T) {
-	s := NewSNES(10, 10, 3, 0.1, false)
+	s := NewSNES(10, DefaultOptions)
 	_ = Float64Searcher(s)
 }

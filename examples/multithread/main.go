@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	o := opt.NewSNES(10, 10, 42, 0.01, false)
+	o := opt.NewSNES(10, opt.DefaultOptions)
 	w := 8
 	p := 1.0
 	done := make(chan int)
